@@ -5,7 +5,9 @@ services:
   - docker
 install:
   - docker build -t mock_kbase .
-  - docker run -d -p 7044:7044 -p 7109:7109 -p 7058:7058 --name mock_kbase mock_kbase
+  - docker run -d -p 3306:3306 -p 7044:7044 -p 7109:7109 -p 7058:7058 --name mock_kbase mock_kbase
 script:
   - docker ps | grep -q mock_kbase
   - python setup.py test
+env:
+  - KB_AUTH_TOKEN=""

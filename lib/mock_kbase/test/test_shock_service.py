@@ -5,16 +5,26 @@ import unittest
 
 from mock_kbase.clients.shock import Client
 
-class TestHandleService(unittest.TestCase):
+class TestShockService(unittest.TestCase):
     def setUp(self):
         self.port = 7044
         self.token = os.environ['KB_AUTH_TOKEN']
 
-    def test_shock_service_up(self):
-        url = "http://localhost:{}".format(self.port)
-        print "Testing shock service at {}".format(url)
+    def test_shock_service_up_anonymous(self):
+        self.is_shock_service_up()
+    
+    def test_shock_service_up_authenticated(self):
+        self.is_shock_service_up(self.token)
 
-        sc = Client(url, token=self.token)
+    def is_shock_service_up(self, token=None):
+        url = "http://localhost:{}".format(self.port)
+
+        if token:
+            print "Testing shock service at {} with auth".format(url)
+            sc = Client(url, token)
+        else:
+            print "Testing shock service at {} without auth".format(url)
+            sc = Client(url)
         nodes = sc._get_node_data('')
         self.assertTrue(nodes is not None)
         print "Number of available shock nodes: {}".format(len(nodes))

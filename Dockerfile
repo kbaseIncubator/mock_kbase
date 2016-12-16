@@ -76,26 +76,71 @@ RUN \
 # install Handle service, Handle manager service, Workspace service
 RUN \
     mkdir -p /var/log/kbase && \
-    pip install sphinx --upgrade && \
+    pip install pyOpenSSL sphinx --upgrade && \
     cd /kb/dev_container/modules && \
-    git clone https://github.com/kbase/handle_service && \
-    git clone https://github.com/kbase/handle_mngr && \
+    git clone https://github.com/kbase/handle_service -b develop && \
+    git clone https://github.com/kbase/handle_mngr -b develop && \
     git clone https://github.com/kbase/workspace_deluxe -b 0.5.0 && \
     cd .. && \
     . ./user-env.sh && make && make deploy && \
     cd /opt/run
 
-# NGINX HTTP, NGINX HTTPS, Auth, SHOCK, Handle, Workspace ports
-EXPOSE 80 443 7039 7044 7109 7058
+# pull down jar for mock auth service, postponed
+#RUN \
+#    mkdir -p /usr/local/auth && \
+#    mkdir /usr/local/auth/globus && \
+#    mkdir /usr/local/auth/kbase && \
+#    cd /usr/local/auth && \
+#    wget http://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.3.1/wiremock-standalone-2.3.1.jar
 
-# Data volumes for SHOCK files, Handle/HandleMngr MySQL DBs, SHOCK/Workspace Mongo DBs
-VOLUME ["/usr/local/shock/data", "/var/lib/mysql", "/var/lib/mongodb"]
+# setup ssl certificate for nginx
+RUN \
+    mkdir /etc/nginx/ssl && cd /etc/nginx/ssl && \
+    # Create the CA Key, Cert
+    openssl req -nodes -newkey rsa:2048 -x509 -days 3650 -keyout ca.key \
+        -sha256 -extensions v3_ca -out ca.crt -set_serial 0 \
+        -subj "/C=US/ST=CA/L=Berkeley/O=DOE/OU=KBase/CN=mock_kbase_ca" && \
+    # Create the Server Key, Cert
+    openssl req -sha256 -new -nodes -keyout server.key.insecure -out server.csr \
+        -subj "/C=US/ST=CA/L=Berkeley/O=DOE/OU=KBase/CN=mock_kbase" && \
+    # Sign the Server Cert using the CA key
+    openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key \
+        -CAcreateserial -days 3650 -out server.crt && \
+    # Copy the Server Cert to the system certificate store, update
+    cp ca.crt /usr/local/share/ca-certificates/ && \
+    cp ca.crt /usr/share/nginx/html/ && \
+    echo "ca.crt" >> /etc/ca-certificates.conf && \
+    update-ca-certificates --fresh
+
+# clean up
+RUN \
+    DEBIAN_FRONTEND=noninteractive apt-get autoclean -y && \
+    DEBIAN_FRONTEND=noninteractive apt-get clean -y && \
+    DEBIAN_FRONTEND=noninteractive apt-get autoremove -y
+
+ENV TERM="xterm"
+
+# NGINX HTTP, NGINX HTTPS, MySQL, SHOCK, Handle, Workspace, MongoDB
+EXPOSE 80 443 3306 7044 7109 7058 27017
+
+# Data volumes for SHOCK files, Handle MySQL DBs, SHOCK/Workspace Mongo DBs
+VOLUME ["/usr/local/shock/data", "/etc/nginx/ssl/"]
+
+# Useful for initializing MySQL or MongoDB
+#VOLUME ["/var/lib/mysql", "/var/lib/mongodb"]
 
 # setup kbase config
 COPY ./build/config/kbase.cfg /kb/deployment/deployment.cfg
 
 # setup mysqld
 COPY ./build/config/my.cnf /etc/mysql/my.cnf
+
+# setup mongod
+COPY ./build/config/mongodb.conf /etc/mongodb.conf
+
+# setup nginx
+COPY ./build/config/nginx_kbase.conf /etc/nginx/nginx.conf
+COPY ./build/config/nginx.default /etc/nginx/sites-enabled/default
 
 # setup supervisord
 COPY ./build/config/supervisord.conf /etc/supervisor/conf.d/kbase.conf
