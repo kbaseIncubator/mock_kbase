@@ -1,0 +1,17 @@
+#!/bin/bash
+source /kb/deployment/user-env.sh
+export JAVA_HOME=/usr/lib/jvm/java-7-oracle/
+export PATH=$JAVA_HOME/bin:$PATH
+export CLASSPATH=
+if [ -z "$KB_DEPLOYMENT_CONFIG" ]
+then
+    export KB_DEPLOYMENT_CONFIG=/kb/deployment/deployment.cfg
+fi
+
+/kb/deployment/services/workspace/glassfish_administer_service.py \
+--admin /kb/runtime/glassfish3/glassfish/bin/asadmin \
+--domain Workspace \
+--domain-dir /kb/deployment/services/workspace/glassfish_domain \
+--war /kb/deployment/services/workspace/WorkspaceService.war \
+--Xms 1000 --Xmx 1500 --threads 2 --port 7058 \
+--properties KB_DEPLOYMENT_CONFIG=$KB_DEPLOYMENT_CONFIG

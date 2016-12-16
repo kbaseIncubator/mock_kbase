@@ -26,11 +26,24 @@ config = {
     'name': 'mock_kbase',
     'version': '0.1',
     'description': 'KBase custom micro install using Docker with mocks for testing',
-    'packages': ['mock_kbase', 'mock_kbase.clients', 'mock_kbase.test'],
+    'packages': [
+        'mock_kbase',
+        'mock_kbase.clients',
+        'mock_kbase.test'
+    ],
     'setup_requires': [],
-    'install_requires': ['requests>=1.7.0', 'requests_toolbelt'],
+    'install_requires': [
+        'requests>=1.7.0', 
+        'requests_toolbelt', 
+        'mysql-connector>=2.1.4'
+    ],
+    'dependency_links': [
+        'git+ssh://git@github.com/globusonline/python-nexus-client#egg=nexus-client-0.0.3'
+    ],
     'test_suite': 'nose.collector',
-    'tests_require': ['nose'],
+    'tests_require': [
+        'nose'
+    ],
     'author': 'KBase',
     'author_email': 'http://kbase.us/contact-us/',
     'license': 'MIT',

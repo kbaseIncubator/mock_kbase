@@ -10,12 +10,10 @@ CREATE TABLE IF NOT EXISTS Handle (
         remote_sha1 varchar(256),
         created_by  varchar(256),
         creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (hid)
+        PRIMARY KEY (hid),
+        CONSTRAINT unique_id UNIQUE (id)
 );
 CREATE USER 'hsi'@'localhost' IDENTIFIED BY 'hsi-pass';
-GRANT SELECT,INSERT,UPDATE,DELETE 
-        ON hsi.*
-        TO 'hsi'@'localhost'
-        IDENTIFIED BY 'hsi-pass';
+CREATE USER 'hsi'@'%' IDENTIFIED BY 'hsi-pass';
+GRANT SELECT,INSERT,UPDATE,DELETE ON hsi.* TO 'hsi'@'localhost', 'hsi'@'%';
 FLUSH PRIVILEGES;
-ALTER TABLE Handle ADD CONSTRAINT unique_id UNIQUE (id);
